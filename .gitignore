@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+nul
 
 # IntelliJ related
 *.iml
@@ -31,7 +32,8 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+/build/*
+!/build/web/
 
 # Symbolication related
 app.*.symbols

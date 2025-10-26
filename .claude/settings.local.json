@@ -6,7 +6,12 @@
       "Bash(nc:*)",
       "Bash(dir:*)",
       "Bash(flutter analyze:*)",
-      "Bash(Select-String \"error -\")"
+      "Bash(Select-String \"error -\")",
+      "Bash(flutter build:*)",
+      "Bash(flutter clean:*)",
+      "Bash(flutter --version:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
