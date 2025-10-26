@@ -5,7 +5,8 @@
       "Bash(flutter pub:*)",
       "Bash(nc:*)",
       "Bash(dir:*)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(Select-String \"error -\")"
     ],
     "deny": [],
     "ask": []

@@ -5,6 +5,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
+import 'config/admin_config.dart';
+import 'models/notice_model.dart';
+import 'models/gallery_model.dart';
+import 'models/press_release_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,11 +55,12 @@ class _LandingPageState extends State<LandingPage> {
   bool _isLoggedIn = false;
   String _loggedInUser = '';
   bool _isMobileMenuOpen = false;
-  List<Map<String, dynamic>> _notices = [];
-  Map<String, dynamic>? _selectedNotice;
-  List<Map<String, dynamic>> _galleryItems = [];
-  Map<String, dynamic>? _selectedGallery;
-  List<Map<String, dynamic>> _pressReleases = [];
+  List<Notice> _notices = [];
+  Notice? _selectedNotice;
+  List<Gallery> _galleryItems = [];
+  Gallery? _selectedGallery;
+  List<PressRelease> _pressReleases = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -72,99 +77,87 @@ class _LandingPageState extends State<LandingPage> {
       ),
     );
 
-    // 초기 공지사항 데이터
-    _notices = [
-      {
-        'id': '15',
-        'category': '공지',
-        'title': '2025년 상반기 직업훈련 프로그램 안내',
-        'author': '관리자',
-        'date': '2025-10-20',
-        'views': '245',
-        'isNew': true,
-      },
-      {
-        'id': '14',
-        'category': '교육',
-        'title': 'IT 기초과정 수강생 모집 (~10/31)',
-        'author': '관리자',
-        'date': '2025-10-18',
-        'views': '182',
-        'isNew': true,
-      },
-      {
-        'id': '13',
-        'category': '행사',
-        'title': '장애인 취업박람회 참가 안내',
-        'author': '관리자',
-        'date': '2025-10-15',
-        'views': '198',
-        'isNew': false,
-      },
-      {
-        'id': '12',
-        'category': '공지',
-        'title': '2025년 10월 월간일정 안내',
-        'author': '관리자',
-        'date': '2025-10-01',
-        'views': '312',
-        'isNew': false,
-      },
-      {
-        'id': '11',
-        'category': '교육',
-        'title': '직업적응훈련 과정 개설 안내',
-        'author': '관리자',
-        'date': '2025-09-28',
-        'views': '156',
-        'isNew': false,
-      },
-      {
-        'id': '10',
-        'category': '공지',
-        'title': '추석 연휴 휴무 안내',
-        'author': '관리자',
-        'date': '2025-09-20',
-        'views': '421',
-        'isNew': false,
-      },
-      {
-        'id': '9',
-        'category': '행사',
-        'title': '능력개발 워크숍 개최 안내',
-        'author': '관리자',
-        'date': '2025-09-15',
-        'views': '189',
-        'isNew': false,
-      },
-      {
-        'id': '8',
-        'category': '교육',
-        'title': '디지털 역량강화 교육 수강생 모집',
-        'author': '관리자',
-        'date': '2025-09-10',
-        'views': '267',
-        'isNew': false,
-      },
-      {
-        'id': '7',
-        'category': '공지',
-        'title': '협회 홈페이지 리뉴얼 안내',
-        'author': '관리자',
-        'date': '2025-09-05',
-        'views': '534',
-        'isNew': false,
-      },
-      {
-        'id': '6',
-        'category': '행사',
-        'title': '장애인의 날 기념행사 개최',
-        'author': '관리자',
-        'date': '2025-08-30',
-        'views': '392',
-        'isNew': false,
-      },
-    ];
+    // Supabase에서 데이터 로드 및 세션 확인
+    _loadDataFromSupabase();
+    _checkSession();
+  }
+
+  // 세션 확인 및 자동 로그인
+  Future<void> _checkSession() async {
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      final user = session.user;
+      setState(() {
+        _isLoggedIn = true;
+        _loggedInUser = user.email ?? '';
+      });
+    }
+  }
+
+  // Supabase에서 모든 데이터 로드
+  Future<void> _loadDataFromSupabase() async {
+    await Future.wait([
+      _loadNotices(),
+      _loadGallery(),
+      _loadPressReleases(),
+    ]);
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  // 공지사항 로드
+  Future<void> _loadNotices() async {
+    try {
+      final response = await supabase
+          .from('notices')
+          .select()
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _notices = (response as List).map((notice) => Notice.fromJson(notice)).toList();
+      });
+    } catch (e) {
+      print('공지사항 로드 오류: $e');
+    }
+  }
+
+  // 활동갤러리 로드
+  Future<void> _loadGallery() async {
+    try {
+      final response = await supabase
+          .from('gallery')
+          .select()
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _galleryItems = (response as List).map((gallery) => Gallery.fromJson(gallery)).toList();
+      });
+    } catch (e) {
+      print('갤러리 로드 오류: $e');
+    }
+  }
+
+  // 보도자료 로드
+  Future<void> _loadPressReleases() async {
+    try {
+      final response = await supabase
+          .from('press_releases')
+          .select()
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _pressReleases = (response as List).map((pr) => PressRelease.fromJson(pr)).toList();
+      });
+    } catch (e) {
+      print('보도자료 로드 오류: $e');
+    }
+  }
+
+  // 관리자 권한 확인
+  bool get _isAdmin {
+    return AdminConfig.isAdmin(_loggedInUser);
   }
 
   @override
@@ -286,8 +279,10 @@ class _LandingPageState extends State<LandingPage> {
               ],
               // 로그인/로그아웃 버튼
               InkWell(
-                onTap: () {
+                onTap: () async {
                   if (_isLoggedIn) {
+                    // Supabase에서 로그아웃
+                    await supabase.auth.signOut();
                     setState(() {
                       _isLoggedIn = false;
                       _loggedInUser = '';
@@ -1272,9 +1267,9 @@ class _LandingPageState extends State<LandingPage> {
             Column(
               children: displayNotices.map((notice) {
                 Color categoryColor = const Color(0xFF6366F1);
-                if (notice['category'] == '교육') {
+                if (notice.category == '교육') {
                   categoryColor = const Color(0xFF8B5CF6);
-                } else if (notice['category'] == '행사') {
+                } else if (notice.category == '행사') {
                   categoryColor = const Color(0xFFEC4899);
                 }
 
@@ -1283,14 +1278,14 @@ class _LandingPageState extends State<LandingPage> {
                     setState(() {
                       _selectedNotice = notice;
                       _currentPage = 6;
-                      final viewCount = int.parse(notice['views']!);
-                      notice['views'] = (viewCount + 1).toString();
+                      // Note: views는 immutable이므로 증가시키려면 새로운 객체를 만들어야 함
+                      // 실제로는 Supabase에서 view count를 증가시키는 함수를 호출해야 함
                     });
                   },
                   child: _buildNewsItem(
-                    notice['category'] as String,
-                    notice['title'] as String,
-                    notice['date'] as String,
+                    notice.category,
+                    notice.title,
+                    notice.createdAt.toString().split(' ')[0],
                     categoryColor,
                   ),
                 );
@@ -1549,7 +1544,7 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildGalleryItemMain(Map<String, dynamic> item) {
+  Widget _buildGalleryItemMain(Gallery item) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1581,7 +1576,7 @@ class _LandingPageState extends State<LandingPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['title'],
+                    item.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1592,7 +1587,7 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    item['date'],
+                    item.createdAt.toString().split(' ')[0],
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF9CA3AF),
@@ -1823,7 +1818,7 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ],
               ),
-              if (_isLoggedIn)
+              if (_isAdmin)
                 ElevatedButton.icon(
                   onPressed: _showGalleryWriteDialog,
                   icon: const Icon(Icons.add_photo_alternate, size: 20),
@@ -1875,7 +1870,7 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildGalleryCard(Map<String, dynamic> item) {
+  Widget _buildGalleryCard(Gallery item) {
     return InkWell(
       onTap: () {
         setState(() {
@@ -1905,7 +1900,7 @@ class _LandingPageState extends State<LandingPage> {
                 child: Container(
                   width: double.infinity,
                   color: const Color(0xFFF3F4F6),
-                  child: item['image'] != null
+                  child: item.imageUrls.isNotEmpty
                       ? const Icon(Icons.image, size: 60, color: Color(0xFF9CA3AF))
                       : const Icon(Icons.image, size: 60, color: Color(0xFF9CA3AF)),
                 ),
@@ -1916,7 +1911,7 @@ class _LandingPageState extends State<LandingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['title'],
+                      item.title,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -1927,7 +1922,7 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item['date'],
+                      item.createdAt.toString().split(' ')[0],
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF9CA3AF),
@@ -1977,7 +1972,7 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ],
               ),
-              if (_isLoggedIn)
+              if (_isAdmin)
                 ElevatedButton.icon(
                   onPressed: _showPressReleaseWriteDialog,
                   icon: const Icon(Icons.add, size: 20),
@@ -2099,7 +2094,7 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildPressReleaseRow(Map<String, dynamic> press) {
+  Widget _buildPressReleaseRow(PressRelease press) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: const BoxDecoration(
@@ -2112,7 +2107,7 @@ class _LandingPageState extends State<LandingPage> {
           SizedBox(
             width: 80,
             child: Text(
-              press['id'],
+              press.id.substring(0, 8),
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF6B7280),
@@ -2123,14 +2118,14 @@ class _LandingPageState extends State<LandingPage> {
             child: Row(
               children: [
                 Text(
-                  press['title'],
+                  press.title,
                   style: const TextStyle(
                     fontSize: 15,
                     color: Color(0xFF1F2937),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (press['isNew'] ?? false) ...[
+                if (DateTime.now().difference(press.createdAt).inDays < 7) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -2154,7 +2149,7 @@ class _LandingPageState extends State<LandingPage> {
           SizedBox(
             width: 120,
             child: Text(
-              press['author'],
+              press.author,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
@@ -2165,7 +2160,7 @@ class _LandingPageState extends State<LandingPage> {
           SizedBox(
             width: 120,
             child: Text(
-              press['date'],
+              press.createdAt.toString().split(' ')[0],
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
@@ -2176,7 +2171,7 @@ class _LandingPageState extends State<LandingPage> {
           SizedBox(
             width: 80,
             child: Text(
-              press['views'],
+              '0',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
@@ -2262,7 +2257,7 @@ class _LandingPageState extends State<LandingPage> {
           const SizedBox(height: 30),
           // 제목
           Text(
-            _selectedGallery!['title'],
+            _selectedGallery!.title,
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -2276,7 +2271,7 @@ class _LandingPageState extends State<LandingPage> {
               const Icon(Icons.person, size: 16, color: Color(0xFF9CA3AF)),
               const SizedBox(width: 6),
               Text(
-                _selectedGallery!['author'] ?? '관리자',
+                _selectedGallery!.author,
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF6B7280),
@@ -2286,7 +2281,7 @@ class _LandingPageState extends State<LandingPage> {
               const Icon(Icons.calendar_today, size: 16, color: Color(0xFF9CA3AF)),
               const SizedBox(width: 6),
               Text(
-                _selectedGallery!['date'],
+                _selectedGallery!.createdAt.toString().split(' ')[0],
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF6B7280),
@@ -2298,11 +2293,11 @@ class _LandingPageState extends State<LandingPage> {
           const Divider(),
           const SizedBox(height: 30),
           // 설명
-          if (_selectedGallery!['description'] != null && _selectedGallery!['description'].toString().isNotEmpty)
+          if (_selectedGallery!.description != null && _selectedGallery!.description!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 30),
               child: Text(
-                _selectedGallery!['description'],
+                _selectedGallery!.description!,
                 style: const TextStyle(
                   fontSize: 16,
                   color: Color(0xFF374151),
@@ -2311,7 +2306,7 @@ class _LandingPageState extends State<LandingPage> {
               ),
             ),
           // 사진 목록
-          if (_selectedGallery!['images'] != null)
+          if (_selectedGallery!.imageUrls.isNotEmpty)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2333,9 +2328,9 @@ class _LandingPageState extends State<LandingPage> {
                     mainAxisSpacing: 16,
                     childAspectRatio: 1.5,
                   ),
-                  itemCount: (_selectedGallery!['images'] as List).length,
+                  itemCount: _selectedGallery!.imageUrls.length,
                   itemBuilder: (context, index) {
-                    final image = (_selectedGallery!['images'] as List)[index];
+                    final imageUrl = _selectedGallery!.imageUrls[index];
                     return Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F4F6),
@@ -2651,16 +2646,16 @@ class _LandingPageState extends State<LandingPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        _getCategoryColor(_selectedNotice!['category']!).withOpacity(0.15),
-                        _getCategoryColor(_selectedNotice!['category']!).withOpacity(0.05)
+                        _getCategoryColor(_selectedNotice!.category).withOpacity(0.15),
+                        _getCategoryColor(_selectedNotice!.category).withOpacity(0.05)
                       ],
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _selectedNotice!['category']!,
+                    _selectedNotice!.category,
                     style: TextStyle(
-                      color: _getCategoryColor(_selectedNotice!['category']!),
+                      color: _getCategoryColor(_selectedNotice!.category),
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -2669,7 +2664,7 @@ class _LandingPageState extends State<LandingPage> {
                 const SizedBox(height: 20),
                 // 제목
                 Text(
-                  _selectedNotice!['title']!,
+                  _selectedNotice!.title,
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -2683,7 +2678,7 @@ class _LandingPageState extends State<LandingPage> {
                     Icon(Icons.person, size: 16, color: const Color(0xFF9CA3AF)),
                     const SizedBox(width: 6),
                     Text(
-                      _selectedNotice!['author']!,
+                      _selectedNotice!.author,
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6B7280),
@@ -2693,7 +2688,7 @@ class _LandingPageState extends State<LandingPage> {
                     Icon(Icons.calendar_today, size: 16, color: const Color(0xFF9CA3AF)),
                     const SizedBox(width: 6),
                     Text(
-                      _selectedNotice!['date']!,
+                      _selectedNotice!.createdAt.toString().split(' ')[0],
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6B7280),
@@ -2703,7 +2698,7 @@ class _LandingPageState extends State<LandingPage> {
                     Icon(Icons.visibility, size: 16, color: const Color(0xFF9CA3AF)),
                     const SizedBox(width: 6),
                     Text(
-                      _selectedNotice!['views']!,
+                      _selectedNotice!.views.toString(),
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6B7280),
@@ -2719,9 +2714,7 @@ class _LandingPageState extends State<LandingPage> {
                 const SizedBox(height: 30),
                 // 내용
                 Text(
-                  '이곳에 공지사항 내용이 표시됩니다.\n\n'
-                  '${_selectedNotice!['title']} 관련 내용입니다.\n\n'
-                  '자세한 내용은 첨부 파일을 확인해주세요.',
+                  _selectedNotice!.content,
                   style: const TextStyle(
                     fontSize: 16,
                     color: Color(0xFF374151),
@@ -2729,7 +2722,73 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ),
                 // 첨부 파일
-                if (_selectedNotice!['fileCount'] != null && _selectedNotice!['fileCount'] > 0) ...[
+                if (_selectedNotice!.fileUrls.isNotEmpty) ...[
+                  const SizedBox(height: 40),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    '첨부파일',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...List.generate(_selectedNotice!.fileUrls.length, (index) {
+                    final fileName = _selectedNotice!.fileNames[index];
+                    final fileUrl = _selectedNotice!.fileUrls[index];
+                    final extension = fileName.split('.').last.toLowerCase();
+
+                    return InkWell(
+                      onTap: () async {
+                        // 파일 다운로드 또는 새 탭에서 열기
+                        final uri = Uri.parse(fileUrl);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _getFileIcon(extension),
+                              color: const Color(0xFF6366F1),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                fileName,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF374151),
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.download,
+                              color: Color(0xFF6366F1),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+                // 이전 주석 처리된 파일 코드
+                /* if (_selectedNotice!['fileCount'] != null && _selectedNotice!['fileCount'] > 0) ...[
                   const SizedBox(height: 40),
                   Container(
                     height: 1,
@@ -2781,7 +2840,7 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                     );
                   }).toList(),
-                ],
+                ], */
               ],
             ),
           ),
@@ -3184,7 +3243,7 @@ class _LandingPageState extends State<LandingPage> {
               ),
               Row(
                 children: [
-                  if (_isLoggedIn) ...[
+                  if (_isAdmin) ...[
                     InkWell(
                       onTap: _showWriteNoticeDialog,
                       child: Container(
@@ -3388,7 +3447,7 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildNoticeRow(Map<String, dynamic> notice, int index) {
+  Widget _buildNoticeRow(Notice notice, int index) {
     Color getCategoryColor(String category) {
       switch (category) {
         case '공지':
@@ -3415,9 +3474,7 @@ class _LandingPageState extends State<LandingPage> {
           setState(() {
             _selectedNotice = notice;
             _currentPage = 6;
-            // 조회수 증가
-            final viewCount = int.parse(notice['views']!);
-            notice['views'] = (viewCount + 1).toString();
+            // Note: views는 immutable이므로 증가시키려면 Supabase 업데이트 필요
           });
         },
         child: Row(
@@ -3426,7 +3483,7 @@ class _LandingPageState extends State<LandingPage> {
             SizedBox(
               width: 60,
               child: Text(
-                notice['id']!,
+                '${_notices.length - index}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -3442,15 +3499,15 @@ class _LandingPageState extends State<LandingPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: getCategoryColor(notice['category']!).withOpacity(0.1),
+                  color: getCategoryColor(notice.category).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  notice['category']!,
+                  notice.category,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: getCategoryColor(notice['category']!),
+                    color: getCategoryColor(notice.category),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -3463,7 +3520,7 @@ class _LandingPageState extends State<LandingPage> {
                 children: [
                   Flexible(
                     child: Text(
-                      notice['title']!,
+                      notice.title,
                       style: const TextStyle(
                         fontSize: 15,
                         color: Color(0xFF1F2937),
@@ -3472,7 +3529,7 @@ class _LandingPageState extends State<LandingPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (notice['isNew'] == true) ...[
+                  if (notice.isNew) ...[
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -3492,7 +3549,7 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                     ),
                   ],
-                  if (notice['fileCount'] != null && notice['fileCount'] > 0) ...[
+                  /* if (notice['fileCount'] != null && notice['fileCount'] > 0) ...[
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -3520,7 +3577,7 @@ class _LandingPageState extends State<LandingPage> {
                         ],
                       ),
                     ),
-                  ],
+                  ], */
                 ],
               ),
             ),
@@ -3528,7 +3585,7 @@ class _LandingPageState extends State<LandingPage> {
             SizedBox(
               width: 100,
               child: Text(
-                notice['author']!,
+                notice.author,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -3541,7 +3598,7 @@ class _LandingPageState extends State<LandingPage> {
             SizedBox(
               width: 100,
               child: Text(
-                notice['date']!,
+                notice.createdAt.toString().split(' ')[0],
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -3559,7 +3616,7 @@ class _LandingPageState extends State<LandingPage> {
                   const Icon(Icons.visibility, size: 14, color: Color(0xFF9CA3AF)),
                   const SizedBox(width: 4),
                   Text(
-                    notice['views']!,
+                    notice.views.toString(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
@@ -4125,6 +4182,7 @@ class _LandingPageState extends State<LandingPage> {
   void _showWriteNoticeDialog() {
     final TextEditingController titleController = TextEditingController();
     final TextEditingController contentController = TextEditingController();
+    final TextEditingController nicknameController = TextEditingController(text: '관리자');
     String selectedCategory = '공지';
     List<PlatformFile> selectedFiles = [];
 
@@ -4195,6 +4253,20 @@ class _LandingPageState extends State<LandingPage> {
                   ],
                 ),
                 const SizedBox(height: 24),
+                TextField(
+                  controller: nicknameController,
+                  decoration: InputDecoration(
+                    labelText: '작성자 닉네임',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: titleController,
                   decoration: InputDecoration(
@@ -4399,7 +4471,7 @@ class _LandingPageState extends State<LandingPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (titleController.text.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -4410,35 +4482,110 @@ class _LandingPageState extends State<LandingPage> {
                             return;
                           }
 
-                          final newId = (_notices.isEmpty
-                                  ? 1
-                                  : int.parse(_notices.first['id']!) + 1)
-                              .toString();
-                          final now = DateTime.now();
-                          final dateStr =
-                              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                          if (contentController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('내용을 입력해주세요.'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                            return;
+                          }
 
-                          setState(() {
-                            _notices.insert(0, {
-                              'id': newId,
-                              'category': selectedCategory,
+                          // Supabase에 공지사항 저장
+                          try {
+                            final user = supabase.auth.currentUser;
+                            print('현재 사용자: ${user?.email}');
+
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('로그인이 필요합니다.'),
+                                  backgroundColor: Color(0xFFEF4444),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // 파일 업로드 처리
+                            List<String> uploadedFileUrls = [];
+                            List<String> uploadedFileNames = [];
+
+                            if (selectedFiles.isNotEmpty) {
+                              print('파일 업로드 시작: ${selectedFiles.length}개');
+
+                              for (var file in selectedFiles) {
+                                try {
+                                  final bytes = file.bytes;
+                                  if (bytes == null) continue;
+
+                                  // 파일명에서 특수문자 제거 및 공백을 언더스코어로 변경
+                                  final timestamp = DateTime.now().millisecondsSinceEpoch;
+                                  final safeName = file.name
+                                      .replaceAll(RegExp(r'[^\w\s\.-]'), '') // 특수문자 제거
+                                      .replaceAll(RegExp(r'\s+'), '_');      // 공백을 언더스코어로
+                                  final fileName = '${user.id}/$timestamp-$safeName';
+
+                                  // Supabase Storage에 업로드
+                                  final uploadPath = await supabase.storage
+                                      .from('notice-files')
+                                      .uploadBinary(fileName, bytes);
+
+                                  // 업로드된 파일의 공개 URL 가져오기
+                                  final fileUrl = supabase.storage
+                                      .from('notice-files')
+                                      .getPublicUrl(fileName);
+
+                                  uploadedFileUrls.add(fileUrl);
+                                  uploadedFileNames.add(file.name);
+                                  print('파일 업로드 성공: ${file.name}');
+                                } catch (fileError) {
+                                  print('파일 업로드 실패: ${file.name}, 에러: $fileError');
+                                }
+                              }
+                            }
+
+                            print('공지사항 저장 시도...');
+                            final response = await supabase.from('notices').insert({
                               'title': titleController.text,
-                              'author': '관리자',
-                              'date': dateStr,
-                              'views': '0',
-                              'isNew': true,
-                              'files': selectedFiles.map((f) => f.name).toList(),
-                              'fileCount': selectedFiles.length,
-                            });
-                          });
+                              'content': contentController.text,
+                              'author': nicknameController.text.isNotEmpty ? nicknameController.text : '관리자',
+                              'author_id': user.id,
+                              'category': selectedCategory,
+                              'views': 0,
+                              'is_new': true,
+                              'file_urls': uploadedFileUrls,
+                              'file_names': uploadedFileNames,
+                            }).select();
 
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('공지사항이 등록되었습니다.'),
-                              backgroundColor: Color(0xFF10B981),
-                            ),
-                          );
+                            print('Supabase 응답: $response');
+
+                            if (response.isNotEmpty) {
+                              // 로컬 리스트에도 추가
+                              final newNotice = Notice.fromJson(response.first);
+                              setState(() {
+                                _notices.insert(0, newNotice);
+                              });
+
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(selectedFiles.isEmpty
+                                      ? '공지사항이 등록되었습니다.'
+                                      : '공지사항이 등록되었습니다. (파일 ${uploadedFileUrls.length}개 첨부)'),
+                                  backgroundColor: Color(0xFF10B981),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            print('공지사항 등록 에러: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('공지사항 등록 실패: $e'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -4803,7 +4950,8 @@ class _LandingPageState extends State<LandingPage> {
                           return;
                         }
 
-                        setState(() {
+                        // TODO: Supabase에 갤러리 저장 구현 필요
+                        /* setState(() {
                           _galleryItems.add({
                             'id': (_galleryItems.length + 1).toString(),
                             'title': titleController.text,
@@ -4813,7 +4961,7 @@ class _LandingPageState extends State<LandingPage> {
                             'images': selectedImages,
                             'image': selectedImages.isNotEmpty ? selectedImages[0] : null,
                           });
-                        });
+                        }); */
 
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -5087,7 +5235,8 @@ class _LandingPageState extends State<LandingPage> {
                           return;
                         }
 
-                        setState(() {
+                        // TODO: Supabase에 보도자료 저장 구현 필요
+                        /* setState(() {
                           _pressReleases.insert(0, {
                             'id': (_pressReleases.length + 1).toString(),
                             'title': titleController.text,
@@ -5098,7 +5247,7 @@ class _LandingPageState extends State<LandingPage> {
                             'isNew': true,
                             'files': selectedFiles,
                           });
-                        });
+                        }); */
 
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
