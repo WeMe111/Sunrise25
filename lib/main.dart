@@ -2067,6 +2067,20 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                         ),
                       ),
+                      // 관리자만 삭제 컬럼 표시
+                      if (_isAdmin)
+                        const SizedBox(
+                          width: 60,
+                          child: Text(
+                            '삭제',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF374151),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -2179,6 +2193,56 @@ class _LandingPageState extends State<LandingPage> {
               ),
             ),
           ),
+          // 관리자만 삭제 버튼 표시
+          if (_isAdmin)
+            SizedBox(
+              width: 60,
+              child: IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                onPressed: () async {
+                  // 삭제 확인 다이얼로그
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('게시글 삭제'),
+                      content: const Text('정말 이 게시글을 삭제하시겠습니까?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('취소'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          child: const Text('삭제'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed == true) {
+                    try {
+                      await supabase.from('press_releases').delete().eq('id', press.id);
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                        );
+                        _loadPressReleases();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('삭제 실패: $e')),
+                        );
+                      }
+                    }
+                  }
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -2232,27 +2296,95 @@ class _LandingPageState extends State<LandingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 뒤로가기 버튼
-          InkWell(
-            onTap: () {
-              setState(() {
-                _currentPage = 3;
-              });
-            },
-            child: Row(
-              children: [
-                const Icon(Icons.arrow_back, size: 20, color: Color(0xFF6366F1)),
-                const SizedBox(width: 8),
-                const Text(
-                  '목록으로',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6366F1),
-                    fontWeight: FontWeight.w600,
+          // 뒤로가기 버튼과 삭제 버튼
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _currentPage = 3;
+                  });
+                },
+                child: Row(
+                  children: [
+                    const Icon(Icons.arrow_back, size: 20, color: Color(0xFF6366F1)),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '목록으로',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6366F1),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 관리자만 삭제 버튼 표시
+              if (_isAdmin)
+                InkWell(
+                  onTap: () async {
+                    // 삭제 확인 다이얼로그
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('게시글 삭제'),
+                        content: const Text('정말 이 게시글을 삭제하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            child: const Text('삭제'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true && _selectedGallery != null) {
+                      try {
+                        await supabase.from('gallery').delete().eq('id', _selectedGallery!.id);
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                          );
+                          setState(() {
+                            _currentPage = 3;
+                            _loadGallery();
+                          });
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('삭제 실패: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '삭제',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
           const SizedBox(height: 30),
           // 제목
@@ -2598,27 +2730,95 @@ class _LandingPageState extends State<LandingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 뒤로가기 버튼
-          InkWell(
-            onTap: () {
-              setState(() {
-                _currentPage = 2;
-              });
-            },
-            child: Row(
-              children: [
-                const Icon(Icons.arrow_back, size: 20, color: Color(0xFF6366F1)),
-                const SizedBox(width: 8),
-                const Text(
-                  '목록으로',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6366F1),
+          // 뒤로가기 버튼과 삭제 버튼
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _currentPage = 2;
+                  });
+                },
+                child: Row(
+                  children: [
+                    const Icon(Icons.arrow_back, size: 20, color: Color(0xFF6366F1)),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '목록으로',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6366F1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 관리자만 삭제 버튼 표시
+              if (_isAdmin)
+                InkWell(
+                  onTap: () async {
+                    // 삭제 확인 다이얼로그
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('게시글 삭제'),
+                        content: const Text('정말 이 게시글을 삭제하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            child: const Text('삭제'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true && _selectedNotice != null) {
+                      try {
+                        await supabase.from('notices').delete().eq('id', _selectedNotice!.id);
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                          );
+                          setState(() {
+                            _currentPage = 2;
+                            _loadNotices();
+                          });
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('삭제 실패: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '삭제',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
           const SizedBox(height: 40),
           // 게시글 내용
