@@ -5301,11 +5301,11 @@ class _LandingPageState extends State<LandingPage> {
                             final safeName = imageFile.name
                                 .replaceAll(RegExp(r'[^\w\s\.-]'), '') // 특수문자 제거
                                 .replaceAll(RegExp(r'\s+'), '_');      // 공백을 언더스코어로
-                            final fileName = '${user.id}/$timestamp-$safeName';
+                            final fileName = '${user.id}/gallery-$timestamp-$safeName';
 
-                            await supabase.storage.from('gallery-images').uploadBinary(fileName, bytes);
+                            await supabase.storage.from('notice-files').uploadBinary(fileName, bytes);
 
-                            final imageUrl = supabase.storage.from('gallery-images').getPublicUrl(fileName);
+                            final imageUrl = supabase.storage.from('notice-files').getPublicUrl(fileName);
                             uploadedImageUrls.add(imageUrl);
                           }
 
@@ -5649,11 +5649,11 @@ class _LandingPageState extends State<LandingPage> {
                             final safeName = file.name
                                 .replaceAll(RegExp(r'[^\w\s\.-]'), '') // 특수문자 제거
                                 .replaceAll(RegExp(r'\s+'), '_');      // 공백을 언더스코어로
-                            final fileName = '${user.id}/$timestamp-$safeName';
+                            final fileName = '${user.id}/press-$timestamp-$safeName';
 
-                            await supabase.storage.from('press-release-files').uploadBinary(fileName, bytes);
+                            await supabase.storage.from('notice-files').uploadBinary(fileName, bytes);
 
-                            final fileUrl = supabase.storage.from('press-release-files').getPublicUrl(fileName);
+                            final fileUrl = supabase.storage.from('notice-files').getPublicUrl(fileName);
                             uploadedFileUrls.add(fileUrl);
                             uploadedFileNames.add(file.name);
                           }
