@@ -60,6 +60,7 @@ class _LandingPageState extends State<LandingPage> {
   List<Gallery> _galleryItems = [];
   Gallery? _selectedGallery;
   List<PressRelease> _pressReleases = [];
+  PressRelease? _selectedPressRelease;
   bool _isLoading = true;
 
   @override
@@ -212,6 +213,8 @@ class _LandingPageState extends State<LandingPage> {
               _buildNoticeDetailPage(),
             ] else if (_currentPage == 7) ...[
               _buildGalleryDetailPage(),
+            ] else if (_currentPage == 8) ...[
+              _buildPressReleaseDetailPage(),
             ],
             _buildFooter(),
           ],
@@ -2141,14 +2144,21 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _buildPressReleaseRow(PressRelease press) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedPressRelease = press;
+          _currentPage = 8;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+          ),
         ),
-      ),
-      child: Row(
+        child: Row(
         children: [
           SizedBox(
             width: 80,
@@ -2276,6 +2286,7 @@ class _LandingPageState extends State<LandingPage> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
@@ -5042,6 +5053,238 @@ class _LandingPageState extends State<LandingPage> {
     } else {
       return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
     }
+  }
+
+  // 보도자료 상세 페이지
+  Widget _buildPressReleaseDetailPage() {
+    if (_selectedPressRelease == null) return Container();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 60),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 뒤로가기 버튼
+          InkWell(
+            onTap: () {
+              setState(() {
+                _currentPage = 4;
+                _selectedPressRelease = null;
+              });
+            },
+            child: Row(
+              children: const [
+                Icon(Icons.arrow_back, color: Color(0xFF6366F1)),
+                SizedBox(width: 8),
+                Text(
+                  '목록으로',
+                  style: TextStyle(
+                    color: Color(0xFF6366F1),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          // 제목
+          Text(
+            _selectedPressRelease!.title,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // 메타 정보
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Color(0xFF6366F1)),
+                    const SizedBox(width: 4),
+                    Text(
+                      _selectedPressRelease!.author,
+                      style: const TextStyle(
+                        color: Color(0xFF6366F1),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14, color: Color(0xFF6B7280)),
+                    const SizedBox(width: 4),
+                    Text(
+                      _selectedPressRelease!.createdAt.toString().split(' ')[0],
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 관리자용 삭제 버튼
+              if (_isAdmin) ...[
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('게시글 삭제'),
+                        content: const Text('정말 이 게시글을 삭제하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: TextButton.styleFrom(foregroundColor: Colors.red),
+                            child: const Text('삭제'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true && _selectedPressRelease != null) {
+                      try {
+                        await supabase.from('press_releases').delete().eq('id', _selectedPressRelease!.id);
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                          );
+                          setState(() {
+                            _currentPage = 4;
+                            _selectedPressRelease = null;
+                          });
+                          _loadPressReleases();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('삭제 실패: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 40),
+          // 내용 영역
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 본문 내용
+                Text(
+                  _selectedPressRelease!.content,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.8,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                // 첨부 파일
+                if (_selectedPressRelease!.fileUrls.isNotEmpty) ...[
+                  const SizedBox(height: 40),
+                  const Divider(),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '첨부 파일',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...List.generate(_selectedPressRelease!.fileUrls.length, (index) {
+                    final fileName = _selectedPressRelease!.fileNames.length > index
+                        ? _selectedPressRelease!.fileNames[index]
+                        : '파일 ${index + 1}';
+                    final extension = fileName.split('.').last.toLowerCase();
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: InkWell(
+                        onTap: () {
+                          // 파일 다운로드/열기
+                          html.window.open(_selectedPressRelease!.fileUrls[index], '_blank');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF9FAFB),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _getFileIcon(extension),
+                                color: const Color(0xFF6366F1),
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  fileName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF374151),
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.download,
+                                color: Color(0xFF6B7280),
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showGalleryWriteDialog() {
