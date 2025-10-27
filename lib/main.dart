@@ -3078,6 +3078,38 @@ class _LandingPageState extends State<LandingPage> {
               color: Color(0xFF1F2937),
             ),
           ),
+          const SizedBox(height: 40),
+
+          // EXPO 이미지
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/images/EXPO.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 400,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
           const SizedBox(height: 60),
 
           // 1. 법인 설립목적 및 연혁
