@@ -1919,7 +1919,21 @@ class _LandingPageState extends State<LandingPage> {
                   width: double.infinity,
                   color: const Color(0xFFF3F4F6),
                   child: item.imageUrls.isNotEmpty
-                      ? const Icon(Icons.image, size: 60, color: Color(0xFF9CA3AF))
+                      ? Image.network(
+                          item.imageUrls[0],
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.broken_image, size: 60, color: Color(0xFF9CA3AF));
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                        )
                       : const Icon(Icons.image, size: 60, color: Color(0xFF9CA3AF)),
                 ),
               ),
