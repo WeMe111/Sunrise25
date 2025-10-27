@@ -1588,7 +1588,21 @@ class _LandingPageState extends State<LandingPage> {
               child: Container(
                 width: double.infinity,
                 color: const Color(0xFFF3F4F6),
-                child: const Icon(Icons.image, size: 60, color: Color(0xFF9CA3AF)),
+                child: item.imageUrls.isNotEmpty
+                    ? Image.network(
+                        item.imageUrls[0],
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.broken_image, size: 60, color: Color(0xFF9CA3AF));
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(child: CircularProgressIndicator());
+                        },
+                      )
+                    : const Icon(Icons.image, size: 60, color: Color(0xFF9CA3AF)),
               ),
             ),
             Padding(
@@ -2512,20 +2526,35 @@ class _LandingPageState extends State<LandingPage> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFE5E7EB)),
                       ),
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.image, size: 48, color: Color(0xFF9CA3AF)),
-                            SizedBox(height: 8),
-                            Text(
-                              '이미지',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF9CA3AF),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.broken_image, size: 48, color: Color(0xFF9CA3AF)),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    '이미지 로드 실패',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(child: CircularProgressIndicator());
+                          },
                         ),
                       ),
                     );
