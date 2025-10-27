@@ -766,6 +766,7 @@ class _LandingPageState extends State<LandingPage> {
       {'icon': Icons.collections_rounded, 'label': '활동갤러리', 'color': Color(0xFFEC4899), 'url': null, 'page': 3},
       {'icon': Icons.description_rounded, 'label': '보도자료', 'color': Color(0xFF14B8A6), 'url': null, 'page': 4},
       {'icon': Icons.favorite_rounded, 'label': '후원하기', 'color': Color(0xFFF59E0B), 'url': null, 'page': 5},
+      {'icon': Icons.article_rounded, 'label': '네이버블로그', 'color': Color(0xFF03C75A), 'url': 'https://blog.naver.com/icaofd', 'page': null},
       {'icon': null, 'label': '국세청', 'color': Color(0xFF059669), 'url': 'https://www.nts.go.kr/', 'image': 'assets/images/nationallogo.jpg'},
     ];
 
@@ -4979,6 +4980,43 @@ class _LandingPageState extends State<LandingPage> {
     }
   }
 
+  // 파일 Content-Type 반환
+  String _getContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt':
+        return 'application/vnd.ms-powerpoint';
+      case 'pptx':
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'zip':
+        return 'application/zip';
+      case 'rar':
+        return 'application/x-rar-compressed';
+      case '7z':
+        return 'application/x-7z-compressed';
+      case 'txt':
+        return 'text/plain';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
   // 파일 크기 포맷팅
   String _formatFileSize(int bytes) {
     if (bytes < 1024) {
@@ -5209,7 +5247,7 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (titleController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -5230,26 +5268,80 @@ class _LandingPageState extends State<LandingPage> {
                           return;
                         }
 
-                        // TODO: Supabase에 갤러리 저장 구현 필요
-                        /* setState(() {
-                          _galleryItems.add({
-                            'id': (_galleryItems.length + 1).toString(),
-                            'title': titleController.text,
-                            'description': descriptionController.text,
-                            'date': '2025-10-24',
-                            'author': _loggedInUser,
-                            'images': selectedImages,
-                            'image': selectedImages.isNotEmpty ? selectedImages[0] : null,
-                          });
-                        }); */
-
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('활동 사진이 등록되었습니다.'),
-                            backgroundColor: Color(0xFF10B981),
+                        // 업로드 중 표시
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(
+                            child: CircularProgressIndicator(),
                           ),
                         );
+
+                        try {
+                          // 1. 이미지 업로드
+                          List<String> uploadedImageUrls = [];
+
+                          for (var imageFile in selectedImages) {
+                            final bytes = imageFile.bytes;
+                            if (bytes == null) continue;
+
+                            final fileExt = imageFile.extension ?? 'jpg';
+                            final fileName = '${DateTime.now().millisecondsSinceEpoch}_${imageFile.name}';
+                            final filePath = 'gallery/$fileName';
+
+                            await supabase.storage.from('images').uploadBinary(
+                              filePath,
+                              bytes,
+                              fileOptions: FileOptions(
+                                contentType: 'image/$fileExt',
+                              ),
+                            );
+
+                            final imageUrl = supabase.storage.from('images').getPublicUrl(filePath);
+                            uploadedImageUrls.add(imageUrl);
+                          }
+
+                          // 2. 데이터베이스에 저장
+                          final gallery = Gallery(
+                            id: '', // DB에서 자동 생성
+                            title: titleController.text,
+                            description: descriptionController.text.isEmpty ? null : descriptionController.text,
+                            author: _loggedInUser ?? '관리자',
+                            authorId: supabase.auth.currentUser?.id ?? '',
+                            views: 0,
+                            imageUrls: uploadedImageUrls,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          );
+
+                          await supabase.from('gallery').insert(gallery.toInsertJson());
+
+                          // 3. 갤러리 목록 새로고침
+                          await _loadGallery();
+
+                          // 업로드 중 다이얼로그 닫기
+                          Navigator.of(context).pop();
+
+                          // 작성 다이얼로그 닫기
+                          Navigator.of(context).pop();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('활동 사진이 등록되었습니다.'),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        } catch (e) {
+                          // 업로드 중 다이얼로그 닫기
+                          Navigator.of(context).pop();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('등록 실패: $e'),
+                              backgroundColor: Color(0xFFEF4444),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6366F1),
@@ -5494,7 +5586,7 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (titleController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -5515,27 +5607,82 @@ class _LandingPageState extends State<LandingPage> {
                           return;
                         }
 
-                        // TODO: Supabase에 보도자료 저장 구현 필요
-                        /* setState(() {
-                          _pressReleases.insert(0, {
-                            'id': (_pressReleases.length + 1).toString(),
-                            'title': titleController.text,
-                            'content': contentController.text,
-                            'date': '2025-10-24',
-                            'author': _loggedInUser,
-                            'views': '0',
-                            'isNew': true,
-                            'files': selectedFiles,
-                          });
-                        }); */
-
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('보도자료가 등록되었습니다.'),
-                            backgroundColor: Color(0xFF10B981),
+                        // 업로드 중 표시
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(
+                            child: CircularProgressIndicator(),
                           ),
                         );
+
+                        try {
+                          // 1. 파일 업로드
+                          List<String> uploadedFileUrls = [];
+                          List<String> uploadedFileNames = [];
+
+                          for (var file in selectedFiles) {
+                            final bytes = file.bytes;
+                            if (bytes == null) continue;
+
+                            final fileExt = file.extension ?? 'pdf';
+                            final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+                            final filePath = 'press_releases/$fileName';
+
+                            await supabase.storage.from('files').uploadBinary(
+                              filePath,
+                              bytes,
+                              fileOptions: FileOptions(
+                                contentType: _getContentType(fileExt),
+                              ),
+                            );
+
+                            final fileUrl = supabase.storage.from('files').getPublicUrl(filePath);
+                            uploadedFileUrls.add(fileUrl);
+                            uploadedFileNames.add(file.name);
+                          }
+
+                          // 2. 데이터베이스에 저장
+                          final pressRelease = PressRelease(
+                            id: '', // DB에서 자동 생성
+                            title: titleController.text,
+                            content: contentController.text,
+                            author: _loggedInUser ?? '관리자',
+                            authorId: supabase.auth.currentUser?.id ?? '',
+                            fileUrls: uploadedFileUrls,
+                            fileNames: uploadedFileNames,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          );
+
+                          await supabase.from('press_releases').insert(pressRelease.toInsertJson());
+
+                          // 3. 보도자료 목록 새로고침
+                          await _loadPressReleases();
+
+                          // 업로드 중 다이얼로그 닫기
+                          Navigator.of(context).pop();
+
+                          // 작성 다이얼로그 닫기
+                          Navigator.of(context).pop();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('보도자료가 등록되었습니다.'),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        } catch (e) {
+                          // 업로드 중 다이얼로그 닫기
+                          Navigator.of(context).pop();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('등록 실패: $e'),
+                              backgroundColor: Color(0xFFEF4444),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6366F1),
