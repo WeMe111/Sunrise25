@@ -5278,6 +5278,18 @@ class _LandingPageState extends State<LandingPage> {
                         );
 
                         try {
+                          final user = supabase.auth.currentUser;
+                          if (user == null) {
+                            Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('로그인이 필요합니다.'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                            return;
+                          }
+
                           // 1. 이미지 업로드
                           List<String> uploadedImageUrls = [];
 
@@ -5285,19 +5297,15 @@ class _LandingPageState extends State<LandingPage> {
                             final bytes = imageFile.bytes;
                             if (bytes == null) continue;
 
-                            final fileExt = imageFile.extension ?? 'jpg';
-                            final fileName = '${DateTime.now().millisecondsSinceEpoch}_${imageFile.name}';
-                            final filePath = 'gallery/$fileName';
+                            final timestamp = DateTime.now().millisecondsSinceEpoch;
+                            final safeName = imageFile.name
+                                .replaceAll(RegExp(r'[^\w\s\.-]'), '') // 특수문자 제거
+                                .replaceAll(RegExp(r'\s+'), '_');      // 공백을 언더스코어로
+                            final fileName = '${user.id}/$timestamp-$safeName';
 
-                            await supabase.storage.from('images').uploadBinary(
-                              filePath,
-                              bytes,
-                              fileOptions: FileOptions(
-                                contentType: 'image/$fileExt',
-                              ),
-                            );
+                            await supabase.storage.from('gallery-images').uploadBinary(fileName, bytes);
 
-                            final imageUrl = supabase.storage.from('images').getPublicUrl(filePath);
+                            final imageUrl = supabase.storage.from('gallery-images').getPublicUrl(fileName);
                             uploadedImageUrls.add(imageUrl);
                           }
 
@@ -5617,6 +5625,18 @@ class _LandingPageState extends State<LandingPage> {
                         );
 
                         try {
+                          final user = supabase.auth.currentUser;
+                          if (user == null) {
+                            Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('로그인이 필요합니다.'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                            return;
+                          }
+
                           // 1. 파일 업로드
                           List<String> uploadedFileUrls = [];
                           List<String> uploadedFileNames = [];
@@ -5625,19 +5645,15 @@ class _LandingPageState extends State<LandingPage> {
                             final bytes = file.bytes;
                             if (bytes == null) continue;
 
-                            final fileExt = file.extension ?? 'pdf';
-                            final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
-                            final filePath = 'press_releases/$fileName';
+                            final timestamp = DateTime.now().millisecondsSinceEpoch;
+                            final safeName = file.name
+                                .replaceAll(RegExp(r'[^\w\s\.-]'), '') // 특수문자 제거
+                                .replaceAll(RegExp(r'\s+'), '_');      // 공백을 언더스코어로
+                            final fileName = '${user.id}/$timestamp-$safeName';
 
-                            await supabase.storage.from('files').uploadBinary(
-                              filePath,
-                              bytes,
-                              fileOptions: FileOptions(
-                                contentType: _getContentType(fileExt),
-                              ),
-                            );
+                            await supabase.storage.from('press-release-files').uploadBinary(fileName, bytes);
 
-                            final fileUrl = supabase.storage.from('files').getPublicUrl(filePath);
+                            final fileUrl = supabase.storage.from('press-release-files').getPublicUrl(fileName);
                             uploadedFileUrls.add(fileUrl);
                             uploadedFileNames.add(file.name);
                           }
