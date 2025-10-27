@@ -83131,7 +83131,7 @@ a3=A.bW("[^\\w\\s\\.-]",!0,!1)
 a2=A.cM(a2,a3,"")
 a3=A.bW("\\s+",!0,!1)
 h=A.cM(a2,a3,"_")
-g=m.a+"/"+A.h(i)+"-"+A.h(h)
+g=m.a+"/gallery-"+A.h(i)+"-"+A.h(h)
 a2=$.e4().at
 a2===$&&A.b()
 a3=a2.a
@@ -83140,10 +83140,10 @@ a5=a2.d
 a6=a2.c
 a6===$&&A.b()
 s=10
-return A.p(new A.mM(a3,a4,"gallery-images",a5,a6).qy(g,j),$async$$0)
+return A.p(new A.mM(a3,a4,"notice-files",a5,a6).qy(g,j),$async$$0)
 case 10:a2=a2.c
 a2===$&&A.b()
-f=new A.mM(a3,a4,"gallery-images",a5,a2).AY(g)
+f=new A.mM(a3,a4,"notice-files",a5,a2).AY(g)
 J.eN(l,f)
 case 8:c.length===a0||(0,A.M)(c),++a1
 s=7
@@ -83272,7 +83272,7 @@ a5=A.bW("[^\\w\\s\\.-]",!0,!1)
 a4=A.cM(a4,a5,"")
 a5=A.bW("\\s+",!0,!1)
 g=A.cM(a4,a5,"_")
-f=m.a+"/"+A.h(h)+"-"+A.h(g)
+f=m.a+"/press-"+A.h(h)+"-"+A.h(g)
 a4=$.e4().at
 a4===$&&A.b()
 a5=a4.a
@@ -83281,10 +83281,10 @@ a7=a4.d
 a8=a4.c
 a8===$&&A.b()
 s=10
-return A.p(new A.mM(a5,a6,"press-release-files",a7,a8).qy(f,i),$async$$0)
+return A.p(new A.mM(a5,a6,"notice-files",a7,a8).qy(f,i),$async$$0)
 case 10:a4=a4.c
 a4===$&&A.b()
-e=new A.mM(a5,a6,"press-release-files",a7,a4).AY(f)
+e=new A.mM(a5,a6,"notice-files",a7,a4).AY(f)
 J.eN(l,e)
 J.eN(k,j.b)
 case 8:a1.length===a2||(0,A.M)(a1),++a3
