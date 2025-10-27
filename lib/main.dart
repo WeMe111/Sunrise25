@@ -160,6 +160,23 @@ class _LandingPageState extends State<LandingPage> {
     return AdminConfig.isAdmin(_loggedInUser);
   }
 
+  // 반응형 디자인 헬퍼 메서드
+  bool _isMobile(BuildContext context) => MediaQuery.of(context).size.width < 768;
+  bool _isTablet(BuildContext context) => MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
+  bool _isDesktop(BuildContext context) => MediaQuery.of(context).size.width >= 1024;
+
+  double _responsivePadding(BuildContext context) {
+    if (_isMobile(context)) return 16.0;
+    if (_isTablet(context)) return 40.0;
+    return 60.0;
+  }
+
+  double _responsiveFontSize(BuildContext context, double baseSize) {
+    if (_isMobile(context)) return baseSize * 0.75;
+    if (_isTablet(context)) return baseSize * 0.9;
+    return baseSize;
+  }
+
   @override
   void dispose() {
     _youtubeController.close();
@@ -3065,20 +3082,23 @@ class _LandingPageState extends State<LandingPage> {
   // 협회소개 페이지
   Widget _buildAboutPage() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 60),
+      padding: EdgeInsets.symmetric(
+        vertical: _responsivePadding(context),
+        horizontal: _responsivePadding(context),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 페이지 타이틀
-          const Text(
+          Text(
             '법인 소개',
             style: TextStyle(
-              fontSize: 36,
+              fontSize: _responsiveFontSize(context, 36),
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
+              color: const Color(0xFF1F2937),
             ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: _isMobile(context) ? 20 : 40),
 
           // EXPO 이미지
           Container(
@@ -3202,10 +3222,10 @@ class _LandingPageState extends State<LandingPage> {
   Widget _buildSection(String title, Widget content) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(_isMobile(context) ? 16 : (_isTablet(context) ? 24 : 32)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(_isMobile(context) ? 12 : 20),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
@@ -3222,7 +3242,7 @@ class _LandingPageState extends State<LandingPage> {
             children: [
               Container(
                 width: 4,
-                height: 24,
+                height: _isMobile(context) ? 18 : 24,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
@@ -3230,18 +3250,20 @@ class _LandingPageState extends State<LandingPage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
+              SizedBox(width: _isMobile(context) ? 8 : 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: _responsiveFontSize(context, 24),
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1F2937),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: _isMobile(context) ? 16 : 24),
           content,
         ],
       ),
@@ -3253,9 +3275,9 @@ class _LandingPageState extends State<LandingPage> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 15,
-          color: Color(0xFF374151),
+        style: TextStyle(
+          fontSize: _responsiveFontSize(context, 15),
+          color: const Color(0xFF374151),
           height: 1.6,
         ),
       ),
