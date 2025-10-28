@@ -71,8 +71,8 @@ class _LandingPageState extends State<LandingPage> {
       videoId: 'Ff21gFHq1GI',
       autoPlay: true,
       params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
+        showControls: false,
+        showFullscreenButton: false,
         mute: true,
         enableCaption: false,
         playsInline: true,
