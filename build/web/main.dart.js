@@ -25745,7 +25745,7 @@ _.c=c
 _.d=d},
 OW:function OW(a,b,c){this.a=a
 this.c=b
-this.x=c},
+this.f=c},
 abu:function abu(a,b){this.a=a
 this.b=b},
 Cc:function Cc(a,b,c,d,e,f){var _=this
@@ -86585,10 +86585,10 @@ o.m(0,"mute",this.a?1:0)
 o.m(0,"cc_lang_pref","en")
 o.m(0,"cc_load_policy",this.c?1:0)
 o.m(0,"color","white")
-o.m(0,"controls",1)
+o.m(0,"controls",this.f?1:0)
 o.m(0,"disablekb",0)
 o.m(0,"enablejsapi",1)
-o.m(0,"fs",this.x?1:0)
+o.m(0,"fs",0)
 o.m(0,"hl","en")
 o.m(0,"iv_load_policy",1)
 o.m(0,"loop",0)
@@ -86606,10 +86606,10 @@ o.m(0,"mute",this.a?1:0)
 o.m(0,"cc_lang_pref","en")
 o.m(0,"cc_load_policy",this.c?1:0)
 o.m(0,"color","white")
-o.m(0,"controls",1)
+o.m(0,"controls",this.f?1:0)
 o.m(0,"disablekb",0)
 o.m(0,"enablejsapi",1)
-o.m(0,"fs",this.x?1:0)
+o.m(0,"fs",0)
 o.m(0,"hl","en")
 o.m(0,"iv_load_policy",1)
 o.m(0,"loop",0)
@@ -92433,8 +92433,8 @@ B.lz=new A.Ca(0,"start")
 B.Yf=new A.Ca(1,"end")
 B.Yg=new A.Ca(2,"center")
 B.Yn=new A.OU("","","",B.x)
-B.a_4=new A.OW(!1,!0,!1)
-B.Yo=new A.OW(!0,!1,!0)
+B.a_4=new A.OW(!1,!0,!0)
+B.Yo=new A.OW(!0,!1,!1)
 B.aI=new A.uU(0,"forward")
 B.iv=new A.uU(1,"reverse")
 B.Yp=new A.Cu(0,"checkbox")
