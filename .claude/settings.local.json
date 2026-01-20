@@ -11,7 +11,17 @@
       "Bash(flutter clean:*)",
       "Bash(flutter --version:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Read(//d/카카오톡 받은 파일/**)",
+      "Bash(copy \"assets\\images\\bllogo.png\" \"web\\favicon.png\" /Y)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
