@@ -21,7 +21,10 @@
       "Bash(git stash:*)",
       "Read(//d/카카오톡 받은 파일/**)",
       "Bash(copy \"assets\\images\\bllogo.png\" \"web\\favicon.png\" /Y)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(copy:*)",
+      "Bash(git restore:*)",
+      "Bash(git clean:*)"
     ],
     "deny": [],
     "ask": []
