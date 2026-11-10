@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'dart:html' as html;
 import 'dart:async';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
@@ -1136,20 +1137,17 @@ class _LandingPageState extends State<LandingPage> {
             );
           }
           // Build line with clickable links
-          final spans = <InlineSpan>[];
+          final spans = <TextSpan>[];
           int lastEnd = 0;
           for (final match in matches) {
             if (match.start > lastEnd) {
               spans.add(TextSpan(text: line.substring(lastEnd, match.start)));
             }
             final url = match.group(0)!;
-            spans.add(WidgetSpan(
-              alignment: PlaceholderAlignment.baseline,
-              baseline: TextBaseline.alphabetic,
-              child: InkWell(
-                onTap: () => html.window.open(url, '_blank'),
-                child: Text(url, style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.info, decoration: TextDecoration.underline, decorationColor: AppColors.info)),
-              ),
+            spans.add(TextSpan(
+              text: url,
+              style: const TextStyle(color: AppColors.info, decoration: TextDecoration.underline, decorationColor: AppColors.info),
+              recognizer: TapGestureRecognizer()..onTap = () => html.window.open(url, '_blank'),
             ));
             lastEnd = match.end;
           }
@@ -1158,7 +1156,7 @@ class _LandingPageState extends State<LandingPage> {
           }
           return Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: RichText(text: TextSpan(style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.textSecondary, fontFamily: 'Pretendard'), children: spans)),
+            child: SelectableText.rich(TextSpan(style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.textSecondary, fontFamily: 'Pretendard'), children: spans)),
           );
         }),
       ],
