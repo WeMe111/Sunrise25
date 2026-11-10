@@ -735,7 +735,7 @@ class _LandingPageState extends State<LandingPage> {
                   onEnter: (_) => setState(() => _hoveredQuickMenuIndex = index),
                   onExit: (_) => setState(() => _hoveredQuickMenuIndex = -1),
                   child: GestureDetector(
-                    onTap: () { if (item.containsKey('url')) launchUrl(Uri.parse(item['url'] as String)); else _navigateTo(item['page'] as int); },
+                    onTap: () { if (item.containsKey('url')) html.window.open(item['url'] as String, '_blank'); else _navigateTo(item['page'] as int); },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeOutCubic,
@@ -1147,7 +1147,7 @@ class _LandingPageState extends State<LandingPage> {
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,
               child: InkWell(
-                onTap: () => launchUrl(Uri.parse(url)),
+                onTap: () => html.window.open(url, '_blank'),
                 child: Text(url, style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.info, decoration: TextDecoration.underline, decorationColor: AppColors.info)),
               ),
             ));
@@ -1424,7 +1424,7 @@ class _LandingPageState extends State<LandingPage> {
 
   Widget _socialRow() {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      _socialBtn(Icons.language, 'Blog', () => launchUrl(Uri.parse('https://blog.naver.com/icaofd'))),
+      _socialBtn(Icons.language, 'Blog', () => html.window.open('https://blog.naver.com/icaofd', '_blank')),
     ]);
   }
 
