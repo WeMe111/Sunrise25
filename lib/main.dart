@@ -1107,6 +1107,64 @@ class _LandingPageState extends State<LandingPage> {
 
   Widget _imgPlaceholder({double? height}) => Container(height: height, color: AppColors.background, child: const Center(child: Icon(Icons.image, color: AppColors.textMuted, size: 40)));
 
+  bool _isImageUrl(String url) => RegExp(r'\.(jpg|jpeg|png|gif|webp)(\?.*)?$', caseSensitive: false).hasMatch(url);
+
+  Widget _buildRichContent(String content, {List<String>? imageUrls}) {
+    final urlRegex = RegExp(r'https?://[^\s\)]+');
+    final lines = content.split('\n');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Inline images from fileUrls
+        if (imageUrls != null) ...imageUrls.where(_isImageUrl).map((url) => Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(url, fit: BoxFit.cover, width: double.infinity,
+              errorBuilder: (_, __, ___) => _imgPlaceholder(height: 200)),
+          ),
+        )),
+        // Content with clickable links
+        ...lines.map((line) {
+          if (line.trim().isEmpty) return const SizedBox(height: 12);
+          final matches = urlRegex.allMatches(line).toList();
+          if (matches.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(line, style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.textSecondary)),
+            );
+          }
+          // Build line with clickable links
+          final spans = <InlineSpan>[];
+          int lastEnd = 0;
+          for (final match in matches) {
+            if (match.start > lastEnd) {
+              spans.add(TextSpan(text: line.substring(lastEnd, match.start)));
+            }
+            final url = match.group(0)!;
+            spans.add(WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: InkWell(
+                onTap: () => launchUrl(Uri.parse(url)),
+                child: Text(url, style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.info, decoration: TextDecoration.underline, decorationColor: AppColors.info)),
+              ),
+            ));
+            lastEnd = match.end;
+          }
+          if (lastEnd < line.length) {
+            spans.add(TextSpan(text: line.substring(lastEnd)));
+          }
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: RichText(text: TextSpan(style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.textSecondary, fontFamily: 'Pretendard'), children: spans)),
+          );
+        }),
+      ],
+    );
+  }
+
   // ═══════════════════════════════════════════
   //  ABOUT PAGE
   // ═══════════════════════════════════════════
@@ -1205,9 +1263,9 @@ class _LandingPageState extends State<LandingPage> {
           _categoryBadge(n.category), const SizedBox(height: 12),
           Text(n.title, style: TextStyle(fontSize: m ? 20 : 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
           const SizedBox(height: 16), _metaRow(n.author, n.createdAt, n.views), const SizedBox(height: 24),
-          Text(n.content, style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.textSecondary)),
-          if (n.fileUrls.isNotEmpty) ...[const SizedBox(height: 32), const Divider(), const SizedBox(height: 12), const Text('첨부파일', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), const SizedBox(height: 8),
-            ...List.generate(n.fileUrls.length, (i) => _fileItem(n.fileUrls[i], n.fileNames.length > i ? n.fileNames[i] : '파일 ${i + 1}'))],
+          _buildRichContent(n.content, imageUrls: n.fileUrls),
+          if (n.fileUrls.where((u) => !_isImageUrl(u)).isNotEmpty) ...[const SizedBox(height: 32), const Divider(), const SizedBox(height: 12), const Text('첨부파일', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), const SizedBox(height: 8),
+            ...n.fileUrls.asMap().entries.where((e) => !_isImageUrl(e.value)).map((e) => _fileItem(e.value, n.fileNames.length > e.key ? n.fileNames[e.key] : '파일 ${e.key + 1}'))],
         ])),
         if (_isAdmin) ...[const SizedBox(height: 12), Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => _deleteItem('notices', n.id, () { _navigateTo(2); _loadNotices(); }), icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error), label: const Text('삭제', style: TextStyle(color: AppColors.error))))],
       ])));
@@ -1289,9 +1347,9 @@ class _LandingPageState extends State<LandingPage> {
         Container(width: double.infinity, padding: EdgeInsets.all(m ? 16 : 28), decoration: _cardDeco(), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(pr.title, style: TextStyle(fontSize: m ? 20 : 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
           const SizedBox(height: 12), _metaRow(pr.author, pr.createdAt, null), const SizedBox(height: 24),
-          Text(pr.content, style: const TextStyle(fontSize: 15, height: 1.8, color: AppColors.textSecondary)),
-          if (pr.fileUrls.isNotEmpty) ...[const SizedBox(height: 32), const Divider(), const SizedBox(height: 12), const Text('첨부파일', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), const SizedBox(height: 8),
-            ...List.generate(pr.fileUrls.length, (i) => _fileItem(pr.fileUrls[i], pr.fileNames.length > i ? pr.fileNames[i] : '파일 ${i + 1}'))],
+          _buildRichContent(pr.content, imageUrls: pr.fileUrls),
+          if (pr.fileUrls.where((u) => !_isImageUrl(u)).isNotEmpty) ...[const SizedBox(height: 32), const Divider(), const SizedBox(height: 12), const Text('첨부파일', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), const SizedBox(height: 8),
+            ...pr.fileUrls.asMap().entries.where((e) => !_isImageUrl(e.value)).map((e) => _fileItem(e.value, pr.fileNames.length > e.key ? pr.fileNames[e.key] : '파일 ${e.key + 1}'))],
         ])),
         if (_isAdmin) ...[const SizedBox(height: 12), Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => _deleteItem('press_releases', pr.id, () { setState(() { _currentPage = 4; _selectedPressRelease = null; }); _loadPressReleases(); }), icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error), label: const Text('삭제', style: TextStyle(color: AppColors.error))))],
       ])));
