@@ -1217,7 +1217,11 @@ class _LandingPageState extends State<LandingPage> {
     final m = _isMobile(context);
     return Center(child: Container(constraints: BoxConstraints(maxWidth: _maxWidth(context)), padding: EdgeInsets.all(m ? 16 : 32),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _pageTitle('활동갤러리'), const SizedBox(height: 24),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          _pageTitle('활동갤러리'),
+          if (_isAdmin) ElevatedButton.icon(onPressed: _showWriteGalleryDialog, icon: const Icon(Icons.add_photo_alternate, size: 16), label: const Text('등록'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12))),
+        ]),
+        const SizedBox(height: 24),
         _galleryItems.isEmpty
             ? const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('등록된 갤러리가 없습니다.', style: TextStyle(color: AppColors.textMuted))))
             : GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -1259,7 +1263,11 @@ class _LandingPageState extends State<LandingPage> {
     final m = _isMobile(context);
     return Center(child: Container(constraints: BoxConstraints(maxWidth: _maxWidth(context)), padding: EdgeInsets.all(m ? 16 : 32),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _pageTitle('보도자료'), const SizedBox(height: 24),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          _pageTitle('보도자료'),
+          if (_isAdmin) ElevatedButton.icon(onPressed: _showWritePressReleaseDialog, icon: const Icon(Icons.edit, size: 16), label: const Text('글쓰기'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12))),
+        ]),
+        const SizedBox(height: 24),
         Container(decoration: _cardDeco(), child: _pressReleases.isEmpty
             ? const Padding(padding: EdgeInsets.all(40), child: Center(child: Text('등록된 보도자료가 없습니다.', style: TextStyle(color: AppColors.textMuted))))
             : Column(children: _pressReleases.asMap().entries.map((e) {
@@ -1467,6 +1475,79 @@ class _LandingPageState extends State<LandingPage> {
               for (var f in files) { try { if (f.bytes == null) continue; final ts = DateTime.now().millisecondsSinceEpoch; final safe = f.name.replaceAll(RegExp(r'[^\w\s\.-]'), '').replaceAll(RegExp(r'\s+'), '_'); final p = '${user.id}/$ts-$safe'; await supabase.storage.from('notice-files').uploadBinary(p, f.bytes!); urls.add(supabase.storage.from('notice-files').getPublicUrl(p)); names.add(f.name); } catch (_) {} }
               final resp = await supabase.from('notices').insert({'title': tc.text, 'content': cc.text, 'author': nc.text.isNotEmpty ? nc.text : '관리자', 'author_id': user.id, 'category': cat, 'views': 0, 'is_new': true, 'file_urls': urls, 'file_names': names}).select();
               if (resp.isNotEmpty) { setState(() => _notices.insert(0, Notice.fromJson(resp.first))); Navigator.of(ctx).pop(); ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('공지사항이 등록되었습니다.'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)))); }
+            } catch (e) { ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('등록 실패: $e'), backgroundColor: AppColors.error)); }
+          }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
+            child: const Text('등록', style: TextStyle(fontWeight: FontWeight.w700)))),
+        ]),
+      ]))))));
+  }
+
+  void _showWriteGalleryDialog() {
+    final tc = TextEditingController(); final dc = TextEditingController();
+    List<PlatformFile> images = [];
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, ss) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(width: 540, padding: const EdgeInsets.all(32), child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.accentWarm, AppColors.accentWarm.withOpacity(0.7)]), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.add_photo_alternate, color: Colors.white, size: 20)), const SizedBox(width: 12), const Text('갤러리 등록', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]),
+        const SizedBox(height: 24),
+        _dlgField(tc, '제목', Icons.title, false), const SizedBox(height: 12),
+        TextField(controller: dc, maxLines: 4, decoration: InputDecoration(labelText: '설명 (선택)', alignLabelWithHint: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.secondary, width: 2)))),
+        const SizedBox(height: 16),
+        const Text('이미지 첨부', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)), const SizedBox(height: 8),
+        InkWell(onTap: () async { final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.image); if (r != null) ss(() { if (images.length + r.files.length <= 10) images.addAll(r.files); }); },
+          child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.image_outlined, color: AppColors.secondary, size: 20), SizedBox(width: 8), Text('이미지 선택 (최대 10장)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.secondary))]))),
+        if (images.isNotEmpty) ...[const SizedBox(height: 8), Wrap(spacing: 6, runSpacing: 6, children: images.asMap().entries.map((e) => Chip(label: Text(e.value.name, style: const TextStyle(fontSize: 11)), deleteIcon: const Icon(Icons.close, size: 14), onDeleted: () => ss(() => images.removeAt(e.key)))).toList())],
+        const SizedBox(height: 24),
+        Row(children: [
+          Expanded(child: OutlinedButton(onPressed: () => Navigator.of(ctx).pop(), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), side: const BorderSide(color: AppColors.border)), child: const Text('취소', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600)))),
+          const SizedBox(width: 12),
+          Expanded(child: ElevatedButton(onPressed: () async {
+            if (tc.text.isEmpty) { ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('제목을 입력해주세요.'), backgroundColor: AppColors.error)); return; }
+            if (images.isEmpty) { ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('이미지를 1장 이상 첨부해주세요.'), backgroundColor: AppColors.error)); return; }
+            try {
+              final user = supabase.auth.currentUser; if (user == null) return;
+              List<String> urls = [];
+              for (var f in images) { try { if (f.bytes == null) continue; final ts = DateTime.now().millisecondsSinceEpoch; final safe = f.name.replaceAll(RegExp(r'[^\w\s\.-]'), '').replaceAll(RegExp(r'\s+'), '_'); final p = '${user.id}/$ts-$safe'; await supabase.storage.from('gallery-images').uploadBinary(p, f.bytes!); urls.add(supabase.storage.from('gallery-images').getPublicUrl(p)); } catch (_) {} }
+              final resp = await supabase.from('gallery').insert({'title': tc.text, 'description': dc.text, 'author': '관리자', 'author_id': user.id, 'image_urls': urls}).select();
+              if (resp.isNotEmpty) { setState(() => _galleryItems.insert(0, Gallery.fromJson(resp.first))); Navigator.of(ctx).pop(); ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('갤러리가 등록되었습니다.'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)))); }
+            } catch (e) { ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('등록 실패: $e'), backgroundColor: AppColors.error)); }
+          }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
+            child: const Text('등록', style: TextStyle(fontWeight: FontWeight.w700)))),
+        ]),
+      ]))))));
+  }
+
+  void _showWritePressReleaseDialog() {
+    final tc = TextEditingController(); final cc = TextEditingController();
+    List<PlatformFile> files = [];
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, ss) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(width: 540, padding: const EdgeInsets.all(32), child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withOpacity(0.7)]), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.newspaper, color: Colors.white, size: 20)), const SizedBox(width: 12), const Text('보도자료 작성', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]),
+        const SizedBox(height: 24),
+        _dlgField(tc, '제목', Icons.title, false), const SizedBox(height: 12),
+        TextField(controller: cc, maxLines: 8, decoration: InputDecoration(labelText: '내용', alignLabelWithHint: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.secondary, width: 2)))),
+        const SizedBox(height: 16),
+        Row(children: [const Text('파일 첨부', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)), const SizedBox(width: 6), Text('(선택, 최대 5개)', style: TextStyle(fontSize: 11, color: AppColors.textMuted))]),
+        const SizedBox(height: 8),
+        InkWell(onTap: () async { final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any); if (r != null) ss(() { if (files.length + r.files.length <= 5) files.addAll(r.files); }); },
+          child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_upload_outlined, color: AppColors.secondary, size: 20), SizedBox(width: 8), Text('파일 선택', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.secondary))]))),
+        ...files.asMap().entries.map((e) => Container(margin: const EdgeInsets.only(top: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
+          child: Row(children: [Icon(_getFileIcon(e.value.extension ?? ''), size: 16, color: AppColors.secondary), const SizedBox(width: 6), Expanded(child: Text(e.value.name, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)), Text(_formatFileSize(e.value.size), style: const TextStyle(fontSize: 11, color: AppColors.textMuted)), const SizedBox(width: 6), InkWell(onTap: () => ss(() => files.removeAt(e.key)), child: const Icon(Icons.close, size: 16, color: AppColors.error))]))),
+        const SizedBox(height: 24),
+        Row(children: [
+          Expanded(child: OutlinedButton(onPressed: () => Navigator.of(ctx).pop(), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), side: const BorderSide(color: AppColors.border)), child: const Text('취소', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600)))),
+          const SizedBox(width: 12),
+          Expanded(child: ElevatedButton(onPressed: () async {
+            if (tc.text.isEmpty || cc.text.isEmpty) { ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('제목과 내용을 입력해주세요.'), backgroundColor: AppColors.error)); return; }
+            try {
+              final user = supabase.auth.currentUser; if (user == null) return;
+              List<String> urls = [], names = [];
+              for (var f in files) { try { if (f.bytes == null) continue; final ts = DateTime.now().millisecondsSinceEpoch; final safe = f.name.replaceAll(RegExp(r'[^\w\s\.-]'), '').replaceAll(RegExp(r'\s+'), '_'); final p = '${user.id}/$ts-$safe'; await supabase.storage.from('press-files').uploadBinary(p, f.bytes!); urls.add(supabase.storage.from('press-files').getPublicUrl(p)); names.add(f.name); } catch (_) {} }
+              final resp = await supabase.from('press_releases').insert({'title': tc.text, 'content': cc.text, 'author': '관리자', 'author_id': user.id, 'file_urls': urls, 'file_names': names}).select();
+              if (resp.isNotEmpty) { setState(() => _pressReleases.insert(0, PressRelease.fromJson(resp.first))); Navigator.of(ctx).pop(); ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('보도자료가 등록되었습니다.'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)))); }
             } catch (e) { ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('등록 실패: $e'), backgroundColor: AppColors.error)); }
           }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
             child: const Text('등록', style: TextStyle(fontWeight: FontWeight.w700)))),
